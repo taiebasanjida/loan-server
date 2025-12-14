@@ -81,8 +81,8 @@ router.post('/', ensureDBConnection, async (req, res) => {
   }
 });
 
-// Get all contact messages (Admin only)
-router.get('/', verifyToken, checkRole('admin'), ensureDBConnection, async (req, res) => {
+// Get all contact messages (Admin and Manager)
+router.get('/', verifyToken, checkRole('admin', 'manager'), ensureDBConnection, async (req, res) => {
   try {
     const { status, page = 1, limit = 10 } = req.query;
     let query = {};
@@ -153,8 +153,8 @@ router.get('/my-messages/:id', verifyToken, ensureDBConnection, async (req, res)
   }
 });
 
-// Get single contact message (Admin only)
-router.get('/:id', verifyToken, checkRole('admin'), ensureDBConnection, async (req, res) => {
+// Get single contact message (Admin and Manager)
+router.get('/:id', verifyToken, checkRole('admin', 'manager'), ensureDBConnection, async (req, res) => {
   try {
     const message = await ContactMessage.findById(req.params.id);
     
@@ -175,8 +175,8 @@ router.get('/:id', verifyToken, checkRole('admin'), ensureDBConnection, async (r
   }
 });
 
-// Update message status (Admin only)
-router.patch('/:id/status', verifyToken, checkRole('admin'), ensureDBConnection, async (req, res) => {
+// Update message status (Admin and Manager)
+router.patch('/:id/status', verifyToken, checkRole('admin', 'manager'), ensureDBConnection, async (req, res) => {
   try {
     const { status, replyMessage } = req.body;
     const message = await ContactMessage.findById(req.params.id);
@@ -223,8 +223,8 @@ router.patch('/:id/status', verifyToken, checkRole('admin'), ensureDBConnection,
   }
 });
 
-// Delete contact message (Admin only)
-router.delete('/:id', verifyToken, checkRole('admin'), ensureDBConnection, async (req, res) => {
+// Delete contact message (Admin and Manager)
+router.delete('/:id', verifyToken, checkRole('admin', 'manager'), ensureDBConnection, async (req, res) => {
   try {
     const message = await ContactMessage.findByIdAndDelete(req.params.id);
     
