@@ -106,6 +106,49 @@ router.get('/', verifyToken, checkRole('admin'), ensureDBConnection, async (req,
   }
 });
 
+// Get user's own messages (Logged-in users) - MUST come before /:id route
+router.get('/my-messages', verifyToken, ensureDBConnection, async (req, res) => {
+  try {
+    const { page = 1, limit = 10 } = req.query;
+
+    const messages = await ContactMessage.find({ userId: req.user.userId })
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    const total = await ContactMessage.countDocuments({ userId: req.user.userId });
+
+    res.json({
+      messages,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+      total,
+    });
+  } catch (error) {
+    console.error('Get user messages error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get single user message (Logged-in users can view their own messages) - MUST come before /:id route
+router.get('/my-messages/:id', verifyToken, ensureDBConnection, async (req, res) => {
+  try {
+    const message = await ContactMessage.findOne({
+      _id: req.params.id,
+      userId: req.user.userId, // Ensure user can only view their own messages
+    });
+    
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+
+    res.json(message);
+  } catch (error) {
+    console.error('Get user message error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Get single contact message (Admin only)
 router.get('/:id', verifyToken, checkRole('admin'), ensureDBConnection, async (req, res) => {
   try {
@@ -172,49 +215,6 @@ router.patch('/:id/status', verifyToken, checkRole('admin'), ensureDBConnection,
     });
   } catch (error) {
     console.error('Update message error:', error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Get user's own messages (Logged-in users)
-router.get('/my-messages', verifyToken, ensureDBConnection, async (req, res) => {
-  try {
-    const { page = 1, limit = 10 } = req.query;
-
-    const messages = await ContactMessage.find({ userId: req.user.userId })
-      .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
-
-    const total = await ContactMessage.countDocuments({ userId: req.user.userId });
-
-    res.json({
-      messages,
-      totalPages: Math.ceil(total / limit),
-      currentPage: page,
-      total,
-    });
-  } catch (error) {
-    console.error('Get user messages error:', error);
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Get single user message (Logged-in users can view their own messages)
-router.get('/my-messages/:id', verifyToken, ensureDBConnection, async (req, res) => {
-  try {
-    const message = await ContactMessage.findOne({
-      _id: req.params.id,
-      userId: req.user.userId, // Ensure user can only view their own messages
-    });
-    
-    if (!message) {
-      return res.status(404).json({ message: 'Message not found' });
-    }
-
-    res.json(message);
-  } catch (error) {
-    console.error('Get user message error:', error);
     res.status(500).json({ message: error.message });
   }
 });
