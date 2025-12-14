@@ -48,9 +48,13 @@ router.post('/', ensureDBConnection, async (req, res) => {
         const jwt = await import('jsonwebtoken');
         const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'your-secret-key');
         userId = decoded.userId;
+        console.log('📧 Contact message from logged-in user:', userId);
+      } else {
+        console.log('📧 Contact message from anonymous user');
       }
     } catch (tokenError) {
       // Token invalid or not provided - continue as anonymous user
+      console.log('📧 Token error (continuing as anonymous):', tokenError.message);
       userId = null;
     }
 
