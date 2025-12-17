@@ -1,11 +1,26 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import User from '../models/User.js';
 import { verifyToken, checkRole } from '../middleware/auth.js';
+import { connectDB } from '../db.js';
 
 const router = express.Router();
 
+// Middleware to ensure DB connection for serverless
+const ensureDBConnection = async (req, res, next) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB();
+    }
+    next();
+  } catch (error) {
+    console.error('Database connection error:', error);
+    res.status(503).json({ message: 'Database connection failed' });
+  }
+};
+
 // Get all users (Admin only)
-router.get('/', verifyToken, checkRole('admin'), async (req, res) => {
+router.get('/', verifyToken, checkRole('admin'), ensureDBConnection, async (req, res) => {
   try {
     const { search, role, page = 1, limit = 10 } = req.query;
     let query = {};
@@ -41,7 +56,7 @@ router.get('/', verifyToken, checkRole('admin'), async (req, res) => {
 });
 
 // Update user role (Admin only)
-router.put('/:id/role', verifyToken, checkRole('admin'), async (req, res) => {
+router.put('/:id/role', verifyToken, checkRole('admin'), ensureDBConnection, async (req, res) => {
   try {
     const { role } = req.body;
     const user = await User.findById(req.params.id);
@@ -60,7 +75,7 @@ router.put('/:id/role', verifyToken, checkRole('admin'), async (req, res) => {
 });
 
 // Suspend user (Admin only)
-router.put('/:id/suspend', verifyToken, checkRole('admin'), async (req, res) => {
+router.put('/:id/suspend', verifyToken, checkRole('admin'), ensureDBConnection, async (req, res) => {
   try {
     const { suspendReason, suspendFeedback } = req.body;
     const user = await User.findById(req.params.id);
@@ -81,7 +96,7 @@ router.put('/:id/suspend', verifyToken, checkRole('admin'), async (req, res) => 
 });
 
 // Unsuspend user (Admin only)
-router.put('/:id/unsuspend', verifyToken, checkRole('admin'), async (req, res) => {
+router.put('/:id/unsuspend', verifyToken, checkRole('admin'), ensureDBConnection, async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
 
